@@ -1,0 +1,35 @@
+# Virtual environment
+.venv/
+venv/
+
+# Environment variables
+.env
+
+# Database & vector store data
+mysql_data/
+qdrant_data/
+
+# Uploaded user images
+uploads/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# YOLO model weights
+*.pt
+
+# HuggingFace cache
+.cache/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up - Smart Gallery</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="auth-body">
+  <div class="auth-card">
+    <h1>Smart Photo Gallery</h1>
+    <h2>Sign Up</h2>
+    <form id="signupForm">
+      <label>Email</label>
+      <input type="email" id="email" required />
+      <label>Username</label>
+      <input type="text" id="username" required />
+      <label>Password</label>
+      <input type="password" id="password" required minlength="6" />
+      <button type="submit">Create Account</button>
+      <p id="error" class="error"></p>
+    </form>
+    <p>Already have an account? <a href="login.html">Login</a></p>
+  </div>
+
+  <script>
+    const API_BASE = localStorage.getItem("apiBaseUrl") || "http://127.0.0.1:8000";
+
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById("error");
+      errorEl.textContent = "";
+
+      const email = document.getElementById("email").value.trim();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/signup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, username, password })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          errorEl.textContent = data.detail || "Signup failed";
+          return;
+        }
+
+        localStorage.setItem("token", data.access_token);
+        window.location.href = "gallery.html";
+      } catch (error) {
+        errorEl.textContent = "Unable to connect to server";
+      }
+    });
+  </script>
+</body>
+</html>

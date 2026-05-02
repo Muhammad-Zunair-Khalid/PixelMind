@@ -1,0 +1,15 @@
+﻿fastapi
+uvicorn
+python-dotenv
+python-jose
+passlib[bcrypt]
+python-multipart
+Pillow
+transformers
+torch
+ultralytics
+sentence-transformers
+qdrant-client
+mysql-connector-python
+openai
+email-validator

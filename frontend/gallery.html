@@ -1,0 +1,267 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Gallery</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Smart Photo Gallery</h1>
+    <div class="topbar-actions">
+      <button id="refreshBtn" class="secondary">Refresh Gallery</button>
+      <button id="logoutBtn" class="danger">Logout</button>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <section class="panel">
+      <h2>Upload</h2>
+      <input type="file" id="fileInput" accept="image/jpeg,image/png" />
+      <button id="uploadBtn">Upload</button>
+      <p id="uploadStatus"></p>
+      <img id="uploadPreview" class="preview hidden" alt="Annotated preview" />
+      <div id="uploadMeta"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Gallery</h2>
+      <div id="galleryGrid" class="card-grid"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Semantic Search</h2>
+      <div class="inline-controls">
+        <input type="text" id="searchQuery" placeholder="Find a photo where I was drinking water" />
+        <button id="searchBtn">Search</button>
+      </div>
+      <div id="searchResults" class="card-grid"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Chat</h2>
+      <select id="chatImageSelect"></select>
+      <div id="chatThread" class="chat-thread"></div>
+      <div class="inline-controls">
+        <input type="text" id="chatInput" placeholder="Ask about selected image" />
+        <button id="chatSendBtn">Send</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = localStorage.getItem("apiBaseUrl") || "http://127.0.0.1:8000";
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      window.location.href = "login.html";
+    }
+
+    const galleryState = {
+      items: [],
+      historyByImageId: {}
+    };
+
+    const headers = {
+      "Authorization": `Bearer ${token}`
+    };
+
+    const galleryGrid = document.getElementById("galleryGrid");
+    const searchResults = document.getElementById("searchResults");
+    const chatThread = document.getElementById("chatThread");
+    const chatImageSelect = document.getElementById("chatImageSelect");
+
+    function absoluteUrl(path) {
+      if (path.startsWith("http")) return path;
+      return `${API_BASE}${path}`;
+    }
+
+    function renderBadges(objects = []) {
+      return objects.map(obj => `<span class="badge">${obj.label} ${(obj.confidence * 100).toFixed(1)}%</span>`).join("");
+    }
+
+    function cardTemplate(item, score = null) {
+      return `
+        <article class="card">
+          <img src="${absoluteUrl(item.thumbnail_url)}" alt="Gallery image ${item.image_id}" />
+          <div class="card-content">
+            <p><strong>#${item.image_id}</strong> ${item.caption || "No caption"}</p>
+            ${score !== null ? `<p class="score">Similarity: ${(score * 100).toFixed(2)}%</p>` : ""}
+            <div class="badge-wrap">${renderBadges(item.objects_detected || [])}</div>
+          </div>
+        </article>
+      `;
+    }
+
+    function populateChatDropdown() {
+      chatImageSelect.innerHTML = "";
+      if (!galleryState.items.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "No images available";
+        chatImageSelect.appendChild(option);
+        return;
+      }
+
+      galleryState.items.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.image_id;
+        option.textContent = `Image #${item.image_id} - ${(item.caption || "No caption").slice(0, 40)}`;
+        chatImageSelect.appendChild(option);
+      });
+    }
+
+    function renderChat(imageId) {
+      const history = galleryState.historyByImageId[imageId] || [];
+      chatThread.innerHTML = history.map(msg => {
+        const side = msg.role === "user" ? "user" : "ai";
+        return `<div class="bubble ${side}">${msg.content}</div>`;
+      }).join("");
+      chatThread.scrollTop = chatThread.scrollHeight;
+    }
+
+    async function loadGallery() {
+      const res = await fetch(`${API_BASE}/api/gallery`, { headers });
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "login.html";
+        return;
+      }
+      const data = await res.json();
+      galleryState.items = data;
+      galleryGrid.innerHTML = data.map(item => cardTemplate(item)).join("");
+      populateChatDropdown();
+      if (galleryState.items.length) {
+        renderChat(String(galleryState.items[0].image_id));
+      }
+    }
+
+    document.getElementById("uploadBtn").addEventListener("click", async () => {
+      const statusEl = document.getElementById("uploadStatus");
+      const metaEl = document.getElementById("uploadMeta");
+      const previewEl = document.getElementById("uploadPreview");
+      const file = document.getElementById("fileInput").files[0];
+
+      statusEl.textContent = "";
+      metaEl.innerHTML = "";
+      previewEl.classList.add("hidden");
+
+      if (!file) {
+        statusEl.textContent = "Please choose an image file.";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        statusEl.textContent = "Uploading and processing...";
+        const res = await fetch(`${API_BASE}/api/upload`, {
+          method: "POST",
+          headers,
+          body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          statusEl.textContent = data.detail || "Upload failed";
+          return;
+        }
+
+        statusEl.textContent = `Uploaded image #${data.image_id}`;
+        metaEl.innerHTML = `
+          <p><strong>Caption:</strong> ${data.caption}</p>
+          <div class="badge-wrap">${renderBadges(data.objects)}</div>
+        `;
+
+        previewEl.src = absoluteUrl(`/api/images/${data.image_id}?type=annotated`);
+        previewEl.classList.remove("hidden");
+
+        await loadGallery();
+      } catch (error) {
+        statusEl.textContent = "Upload failed due to network error";
+      }
+    });
+
+    document.getElementById("searchBtn").addEventListener("click", async () => {
+      const query = document.getElementById("searchQuery").value.trim();
+      if (!query) {
+        searchResults.innerHTML = "<p>Type a query first.</p>";
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/search`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ query })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        searchResults.innerHTML = `<p>${data.detail || "Search failed"}</p>`;
+        return;
+      }
+
+      if (!data.length) {
+        searchResults.innerHTML = "<p>No matches found.</p>";
+        return;
+      }
+
+      searchResults.innerHTML = data.map(item => cardTemplate(item, item.score)).join("");
+    });
+
+    document.getElementById("chatSendBtn").addEventListener("click", async () => {
+      const imageId = chatImageSelect.value;
+      const input = document.getElementById("chatInput");
+      const message = input.value.trim();
+
+      if (!imageId || !message) {
+        return;
+      }
+
+      if (!galleryState.historyByImageId[imageId]) {
+        galleryState.historyByImageId[imageId] = [];
+      }
+
+      galleryState.historyByImageId[imageId].push({ role: "user", content: message });
+      renderChat(imageId);
+      input.value = "";
+
+      const history = galleryState.historyByImageId[imageId];
+      const safeHistory = history.slice(-10).filter(msg => msg.role === "user" || msg.role === "assistant");
+
+      const res = await fetch(`${API_BASE}/api/chat`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ image_id: Number(imageId), message, history: safeHistory })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        galleryState.historyByImageId[imageId].push({ role: "assistant", content: data.detail || "Chat failed" });
+        renderChat(imageId);
+        return;
+      }
+
+      galleryState.historyByImageId[imageId].push({ role: "assistant", content: data.reply });
+      renderChat(imageId);
+    });
+
+    chatImageSelect.addEventListener("change", () => {
+      if (chatImageSelect.value) {
+        renderChat(chatImageSelect.value);
+      }
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", loadGallery);
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("token");
+      window.location.href = "login.html";
+    });
+
+    loadGallery();
+  </script>
+</body>
+</html>

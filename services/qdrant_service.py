@@ -1,0 +1,62 @@
+﻿import os
+
+from dotenv import load_dotenv
+from qdrant_client import QdrantClient
+from qdrant_client.http import models
+
+load_dotenv()
+
+COLLECTION_NAME = "gallery"
+VECTOR_SIZE = 384
+
+qdrant_client = QdrantClient(
+    host=os.getenv("QDRANT_HOST", "localhost"),
+    port=int(os.getenv("QDRANT_PORT", "6333")),
+)
+
+
+def ensure_collection() -> None:
+    collections = qdrant_client.get_collections().collections
+    existing = {collection.name for collection in collections}
+    if COLLECTION_NAME in existing:
+        return
+
+    qdrant_client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=VECTOR_SIZE, distance=models.Distance.COSINE),
+    )
+
+
+def store_vector(image_id: int, user_id: int, caption: str, vector: list[float]) -> None:
+    point = models.PointStruct(
+        id=image_id,
+        vector=vector,
+        payload={"user_id": user_id, "image_id": image_id, "caption": caption},
+    )
+    qdrant_client.upsert(collection_name=COLLECTION_NAME, points=[point])
+
+
+def search_vectors(query_vector: list[float], user_id: int, limit: int = 3) -> list[dict]:
+    response = qdrant_client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        query_filter=models.Filter(
+            must=[
+                models.FieldCondition(
+                    key="user_id",
+                    match=models.MatchValue(value=user_id),
+                )
+            ]
+        ),
+        limit=limit,
+        with_payload=True,
+    )
+
+    return [
+        {
+            "image_id": int(hit.payload.get("image_id", hit.id)),
+            "caption": hit.payload.get("caption"),
+            "score": float(hit.score),
+        }
+        for hit in response
+    ]
