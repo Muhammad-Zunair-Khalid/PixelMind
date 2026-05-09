@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from mysql.connector.pooling import MySQLConnectionPool
 
 load_dotenv()
-
+# pooling
 _DB_CONFIG = {
     "host": os.getenv("MYSQL_HOST", "localhost"),
     "port": int(os.getenv("MYSQL_PORT", "3306")),
