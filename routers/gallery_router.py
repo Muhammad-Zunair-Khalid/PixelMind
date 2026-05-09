@@ -1,11 +1,11 @@
-﻿import json
+import json
 from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
 
-from auth import get_current_user_id
+from auth import get_current_user_id, get_current_user_id_flexible
 from database import get_db_connection
 from models import GalleryItem, ObjectDetection
 
@@ -55,7 +55,7 @@ def get_gallery(current_user_id: int = Depends(get_current_user_id)) -> list[Gal
 def get_image(
     image_id: int,
     type: Literal["original", "annotated"] = Query(default="original"),
-    current_user_id: int = Depends(get_current_user_id),
+    current_user_id: int = Depends(get_current_user_id_flexible),
 ):
     with get_db_connection() as conn:
         cursor = conn.cursor(dictionary=True)
@@ -73,11 +73,17 @@ def get_image(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
     selected_path = row["annotated_path"] if type == "annotated" else row["file_path"]
-    if not selected_path:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image variant not found")
+    fallback_path  = row["file_path"] if type == "annotated" else row["annotated_path"]
 
-    file_path = Path(selected_path)
-    if not file_path.exists():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+    # Use preferred path if it exists, otherwise fall back to the other variant
+    chosen = None
+    for candidate in (selected_path, fallback_path):
+        if candidate and Path(candidate).exists():
+            chosen = candidate
+            break
 
-    return FileResponse(path=file_path, media_type="image/jpeg")
+    if not chosen:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image file not found on disk")
+
+    return FileResponse(path=Path(chosen), media_type="image/jpeg")
+

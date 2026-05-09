@@ -1,8 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Smart Gallery</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -81,10 +84,22 @@
       return objects.map(obj => `<span class="badge">${obj.label} ${(obj.confidence * 100).toFixed(1)}%</span>`).join("");
     }
 
+    // Build an authenticated image URL by appending the token as a query param.
+    // This lets regular <img src="..."> tags load protected images without fetch().
+    function imageUrl(apiPath) {
+      const base = absoluteUrl(apiPath);
+      const sep = base.includes("?") ? "&" : "?";
+      return `${base}${sep}token=${encodeURIComponent(token)}`;
+    }
+
     function cardTemplate(item, score = null) {
       return `
         <article class="card">
-          <img src="${absoluteUrl(item.thumbnail_url)}" alt="Gallery image ${item.image_id}" />
+          <img
+            src="${imageUrl(item.thumbnail_url)}"
+            alt="Gallery image ${item.image_id}"
+            onerror="console.error('Image failed to load:', this.src, '| Status may be 401/403/404 — check backend')"
+          />
           <div class="card-content">
             <p><strong>#${item.image_id}</strong> ${item.caption || "No caption"}</p>
             ${score !== null ? `<p class="score">Similarity: ${(score * 100).toFixed(2)}%</p>` : ""}
@@ -175,7 +190,8 @@
           <div class="badge-wrap">${renderBadges(data.objects)}</div>
         `;
 
-        previewEl.src = absoluteUrl(`/api/images/${data.image_id}?type=annotated`);
+        // Load the annotated preview with the token as a query parameter
+        previewEl.src = imageUrl(`/api/images/${data.image_id}?type=annotated`);
         previewEl.classList.remove("hidden");
 
         await loadGallery();
@@ -186,29 +202,52 @@
 
     document.getElementById("searchBtn").addEventListener("click", async () => {
       const query = document.getElementById("searchQuery").value.trim();
+      const btn = document.getElementById("searchBtn");
+
       if (!query) {
         searchResults.innerHTML = "<p>Type a query first.</p>";
         return;
       }
 
-      const res = await fetch(`${API_BASE}/api/search`, {
-        method: "POST",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({ query })
-      });
-      const data = await res.json();
+      // Show loading state
+      btn.disabled = true;
+      btn.textContent = "Searching…";
+      searchResults.innerHTML = "<p>Searching…</p>";
 
-      if (!res.ok) {
-        searchResults.innerHTML = `<p>${data.detail || "Search failed"}</p>`;
-        return;
+      try {
+        const res = await fetch(`${API_BASE}/api/search`, {
+          method: "POST",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ query })
+        });
+
+        let data;
+        try {
+          data = await res.json();
+        } catch {
+          searchResults.innerHTML = "<p>Server returned an unexpected response. Check backend logs.</p>";
+          return;
+        }
+
+        if (!res.ok) {
+          searchResults.innerHTML = `<p>Error ${res.status}: ${data.detail || "Search failed"}</p>`;
+          return;
+        }
+
+        if (!data.length) {
+          searchResults.innerHTML = "<p>No matches found for your query.</p>";
+          return;
+        }
+
+        searchResults.innerHTML = data.map(item => cardTemplate(item, item.score)).join("");
+
+      } catch (err) {
+        searchResults.innerHTML = `<p>Network error: ${err.message}. Is the backend running?</p>`;
+        console.error("Search error:", err);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Search";
       }
-
-      if (!data.length) {
-        searchResults.innerHTML = "<p>No matches found.</p>";
-        return;
-      }
-
-      searchResults.innerHTML = data.map(item => cardTemplate(item, item.score)).join("");
     });
 
     document.getElementById("chatSendBtn").addEventListener("click", async () => {

@@ -1,8 +1,9 @@
-﻿import os
+import os
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Query, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -47,3 +48,29 @@ def decode_access_token(token: str) -> int:
 
 def get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
     return decode_access_token(token)
+
+
+def get_current_user_id_flexible(
+    request: Request,
+    token_query: Optional[str] = Query(default=None, alias="token"),
+) -> int:
+    """
+    Accepts JWT from either:
+      - Authorization: Bearer <token>  header  (API calls via fetch/axios)
+      - ?token=<token>                 query param (img src tags, direct links)
+    """
+    # 1. Try query parameter first (used by <img src="...?token=...">)
+    if token_query:
+        return decode_access_token(token_query)
+
+    # 2. Fall back to Authorization header
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        return decode_access_token(auth_header[7:])
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+

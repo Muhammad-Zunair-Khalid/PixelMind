@@ -1,4 +1,4 @@
-﻿import os
+import os
 
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
@@ -37,9 +37,9 @@ def store_vector(image_id: int, user_id: int, caption: str, vector: list[float])
 
 
 def search_vectors(query_vector: list[float], user_id: int, limit: int = 3) -> list[dict]:
-    response = qdrant_client.search(
+    response = qdrant_client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         query_filter=models.Filter(
             must=[
                 models.FieldCondition(
@@ -58,5 +58,5 @@ def search_vectors(query_vector: list[float], user_id: int, limit: int = 3) -> l
             "caption": hit.payload.get("caption"),
             "score": float(hit.score),
         }
-        for hit in response
+        for hit in response.points
     ]
