@@ -1,4 +1,4 @@
-﻿import os
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -9,6 +9,7 @@ from database import initialize_database
 from routers.auth_router import router as auth_router
 from routers.chat_router import router as chat_router
 from routers.gallery_router import router as gallery_router
+from routers.quota_router import router as quota_router
 from routers.search_router import router as search_router
 from routers.upload_router import router as upload_router
 from services.qdrant_service import ensure_collection
@@ -35,6 +36,7 @@ app.include_router(upload_router, prefix="/api", tags=["upload"])
 app.include_router(gallery_router, prefix="/api", tags=["gallery"])
 app.include_router(search_router, prefix="/api", tags=["search"])
 app.include_router(chat_router, prefix="/api", tags=["chat"])
+app.include_router(quota_router, prefix="/api", tags=["quota"])
 
 
 @app.on_event("startup")

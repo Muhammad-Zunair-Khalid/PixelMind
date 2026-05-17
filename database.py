@@ -1,4 +1,4 @@
-﻿import os
+import os
 from contextlib import contextmanager
 from typing import Generator
 
@@ -54,9 +54,20 @@ def initialize_database() -> None:
     )
     """
 
+    create_quotas = """
+    CREATE TABLE IF NOT EXISTS user_quotas (
+      user_id    INT NOT NULL PRIMARY KEY,
+      quota_date DATE NOT NULL,
+      uploads    INT DEFAULT 0,
+      tokens     INT DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+    """
+
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(create_users)
         cursor.execute(create_images)
+        cursor.execute(create_quotas)
         conn.commit()
         cursor.close()

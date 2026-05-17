@@ -1,4 +1,4 @@
-﻿import json
+import json
 from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
@@ -11,6 +11,7 @@ from database import get_db_connection
 from models import ObjectDetection, UploadResponse
 from services.blip_service import generate_caption
 from services.embedding_service import encode
+from services.quota_service import check_and_increment_uploads
 from services.qdrant_service import store_vector
 from services.yolo_service import detect_objects
 
@@ -41,6 +42,11 @@ async def upload_image(
         image = Image.open(BytesIO(file_bytes)).convert("RGB")
     except UnidentifiedImageError as exc:
         raise HTTPException(status_code=422, detail="Invalid image file") from exc
+
+    # --- Quota check (before expensive processing) ---
+    with get_db_connection() as conn:
+        check_and_increment_uploads(current_user_id, conn)
+        conn.commit()
 
     image_uuid = str(uuid4())
     user_dir = Path("uploads") / str(current_user_id)

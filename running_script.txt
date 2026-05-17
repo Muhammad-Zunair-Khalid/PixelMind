@@ -1,5 +1,5 @@
 Yes, every time you start fresh here's the exact order:
-
+# this is solely for my own testing and as a cheat sheet nothing to do with your understanding.
 **1. Start Docker Desktop first** (from Start menu, wait for whale icon in taskbar to stop animating)
 
 **2. Start containers:**

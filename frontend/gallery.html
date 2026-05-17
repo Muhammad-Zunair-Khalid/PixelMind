@@ -8,6 +8,103 @@
   <meta http-equiv="Expires" content="0" />
   <title>Smart Gallery</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Usage Dashboard ─────────────────────────────────────────── */
+    .usage-dashboard {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+
+    .usage-card {
+      flex: 1;
+      min-width: 160px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .usage-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .usage-card h3 {
+      margin: 0;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+    }
+
+    /* SVG donut */
+    .donut-wrap {
+      position: relative;
+      width: 100px;
+      height: 100px;
+    }
+    .donut-wrap svg { transform: rotate(-90deg); }
+
+    .donut-track {
+      fill: none;
+      stroke: rgba(255,255,255,0.07);
+      stroke-width: 10;
+    }
+    .donut-fill {
+      fill: none;
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.9s cubic-bezier(0.4, 0, 0.2, 1),
+                  stroke 0.4s ease;
+    }
+    .donut-fill.upload-color  { stroke: #38bdf8; }
+    .donut-fill.token-color   { stroke: #a78bfa; }
+    .donut-fill.quota-hit     { stroke: #f87171; }
+
+    .donut-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .donut-label .value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+    }
+    .donut-label .limit {
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .quota-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      background: rgba(248, 113, 113, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(248,113,113,0.3);
+      letter-spacing: 0.05em;
+    }
+    .quota-badge.ok {
+      background: rgba(16, 185, 129, 0.1);
+      color: #34d399;
+      border-color: rgba(52,211,153,0.3);
+    }
+  </style>
 </head>
 <body>
   <header class="topbar">
@@ -19,6 +116,54 @@
   </header>
 
   <main class="dashboard">
+
+    <!-- ── Usage Dashboard ────────────────────────────────────────── -->
+    <section class="panel" id="usagePanel">
+      <h2>📊 Today's Usage</h2>
+      <div class="usage-dashboard">
+
+        <!-- Uploads card -->
+        <div class="usage-card">
+          <h3>📷 Images Uploaded</h3>
+          <div class="donut-wrap" id="uploadDonutWrap">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+              <circle class="donut-track" cx="50" cy="50" r="40"/>
+              <circle id="uploadArc" class="donut-fill upload-color"
+                      cx="50" cy="50" r="40"
+                      stroke-dasharray="251.2"
+                      stroke-dashoffset="251.2"/>
+            </svg>
+            <div class="donut-label">
+              <span class="value" id="uploadValue">–</span>
+              <span class="limit" id="uploadLimit">/ 10</span>
+            </div>
+          </div>
+          <span class="quota-badge ok" id="uploadBadge">OK</span>
+        </div>
+
+        <!-- Tokens card -->
+        <div class="usage-card">
+          <h3>🤖 AI Tokens Used</h3>
+          <div class="donut-wrap" id="tokenDonutWrap">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+              <circle class="donut-track" cx="50" cy="50" r="40"/>
+              <circle id="tokenArc" class="donut-fill token-color"
+                      cx="50" cy="50" r="40"
+                      stroke-dasharray="251.2"
+                      stroke-dashoffset="251.2"/>
+            </svg>
+            <div class="donut-label">
+              <span class="value" id="tokenValue">–</span>
+              <span class="limit" id="tokenLimit">/ 2000</span>
+            </div>
+          </div>
+          <span class="quota-badge ok" id="tokenBadge">OK</span>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── Upload ─────────────────────────────────────────────────── -->
     <section class="panel">
       <h2>Upload</h2>
       <input type="file" id="fileInput" accept="image/jpeg,image/png" />
@@ -28,11 +173,13 @@
       <div id="uploadMeta"></div>
     </section>
 
+    <!-- ── Gallery ────────────────────────────────────────────────── -->
     <section class="panel">
       <h2>Gallery</h2>
       <div id="galleryGrid" class="card-grid"></div>
     </section>
 
+    <!-- ── Semantic Search ────────────────────────────────────────── -->
     <section class="panel">
       <h2>Semantic Search</h2>
       <div class="inline-controls">
@@ -42,6 +189,7 @@
       <div id="searchResults" class="card-grid"></div>
     </section>
 
+    <!-- ── Chat ──────────────────────────────────────────────────── -->
     <section class="panel">
       <h2>Chat</h2>
       <select id="chatImageSelect"></select>
@@ -70,22 +218,78 @@
       "Authorization": `Bearer ${token}`
     };
 
-    const galleryGrid = document.getElementById("galleryGrid");
-    const searchResults = document.getElementById("searchResults");
-    const chatThread = document.getElementById("chatThread");
+    const galleryGrid    = document.getElementById("galleryGrid");
+    const searchResults  = document.getElementById("searchResults");
+    const chatThread     = document.getElementById("chatThread");
     const chatImageSelect = document.getElementById("chatImageSelect");
 
+    /* ── Quota Dashboard ─────────────────────────────────────────── */
+    const CIRCUMFERENCE = 251.2; // 2 * π * 40
+
+    function animateDonut(arcEl, used, limit) {
+      const ratio = Math.min(used / limit, 1);
+      const offset = CIRCUMFERENCE - ratio * CIRCUMFERENCE;
+      arcEl.style.strokeDashoffset = offset;
+    }
+
+    async function refreshQuota() {
+      try {
+        const res = await fetch(`${API_BASE}/api/quota`, { headers });
+        if (!res.ok) return;
+        const q = await res.json();
+
+        // Uploads
+        document.getElementById("uploadValue").textContent = q.uploads;
+        document.getElementById("uploadLimit").textContent = `/ ${q.upload_limit}`;
+        const uploadArc = document.getElementById("uploadArc");
+        animateDonut(uploadArc, q.uploads, q.upload_limit);
+        const uploadBadge = document.getElementById("uploadBadge");
+        if (q.uploads >= q.upload_limit) {
+          uploadArc.classList.add("quota-hit");
+          uploadArc.classList.remove("upload-color");
+          uploadBadge.textContent = "Quota Reached";
+          uploadBadge.classList.remove("ok");
+        } else {
+          uploadArc.classList.remove("quota-hit");
+          uploadArc.classList.add("upload-color");
+          uploadBadge.textContent = "OK";
+          uploadBadge.classList.add("ok");
+        }
+
+        // Tokens
+        document.getElementById("tokenValue").textContent = q.tokens;
+        document.getElementById("tokenLimit").textContent = `/ ${q.token_limit}`;
+        const tokenArc = document.getElementById("tokenArc");
+        animateDonut(tokenArc, q.tokens, q.token_limit);
+        const tokenBadge = document.getElementById("tokenBadge");
+        if (q.tokens >= q.token_limit) {
+          tokenArc.classList.add("quota-hit");
+          tokenArc.classList.remove("token-color");
+          tokenBadge.textContent = "Quota Reached";
+          tokenBadge.classList.remove("ok");
+        } else {
+          tokenArc.classList.remove("quota-hit");
+          tokenArc.classList.add("token-color");
+          tokenBadge.textContent = "OK";
+          tokenBadge.classList.add("ok");
+        }
+      } catch (err) {
+        console.warn("Quota fetch failed:", err);
+      }
+    }
+
+    /* ── Helpers ─────────────────────────────────────────────────── */
     function absoluteUrl(path) {
       if (path.startsWith("http")) return path;
       return `${API_BASE}${path}`;
     }
 
     function renderBadges(objects = []) {
-      return objects.map(obj => `<span class="badge">${obj.label} ${(obj.confidence * 100).toFixed(1)}%</span>`).join("");
+      return objects.map(obj =>
+        `<span class="badge">${obj.label} ${(obj.confidence * 100).toFixed(1)}%</span>`
+      ).join("");
     }
 
-    // Build an authenticated image URL by appending the token as a query param.
-    // This lets regular <img src="..."> tags load protected images without fetch().
     function imageUrl(apiPath) {
       const base = absoluteUrl(apiPath);
       const sep = base.includes("?") ? "&" : "?";
@@ -98,7 +302,7 @@
           <img
             src="${imageUrl(item.thumbnail_url)}"
             alt="Gallery image ${item.image_id}"
-            onerror="console.error('Image failed to load:', this.src, '| Status may be 401/403/404 — check backend')"
+            onerror="console.error('Image failed to load:', this.src)"
           />
           <div class="card-content">
             <p><strong>#${item.image_id}</strong> ${item.caption || "No caption"}</p>
@@ -118,7 +322,6 @@
         chatImageSelect.appendChild(option);
         return;
       }
-
       galleryState.items.forEach(item => {
         const option = document.createElement("option");
         option.value = item.image_id;
@@ -152,11 +355,12 @@
       }
     }
 
+    /* ── Upload ──────────────────────────────────────────────────── */
     document.getElementById("uploadBtn").addEventListener("click", async () => {
-      const statusEl = document.getElementById("uploadStatus");
-      const metaEl = document.getElementById("uploadMeta");
+      const statusEl  = document.getElementById("uploadStatus");
+      const metaEl    = document.getElementById("uploadMeta");
       const previewEl = document.getElementById("uploadPreview");
-      const file = document.getElementById("fileInput").files[0];
+      const file      = document.getElementById("fileInput").files[0];
 
       statusEl.textContent = "";
       metaEl.innerHTML = "";
@@ -172,44 +376,49 @@
 
       try {
         statusEl.textContent = "Uploading and processing...";
-        const res = await fetch(`${API_BASE}/api/upload`, {
+        const res  = await fetch(`${API_BASE}/api/upload`, {
           method: "POST",
           headers,
           body: formData
         });
 
         const data = await res.json();
+
+        if (res.status === 429) {
+          statusEl.textContent = `🚫 ${data.detail}`;
+          await refreshQuota();
+          return;
+        }
         if (!res.ok) {
           statusEl.textContent = data.detail || "Upload failed";
           return;
         }
 
-        statusEl.textContent = `Uploaded image #${data.image_id}`;
+        statusEl.textContent = `✅ Uploaded image #${data.image_id}`;
         metaEl.innerHTML = `
           <p><strong>Caption:</strong> ${data.caption}</p>
           <div class="badge-wrap">${renderBadges(data.objects)}</div>
         `;
 
-        // Load the annotated preview with the token as a query parameter
         previewEl.src = imageUrl(`/api/images/${data.image_id}?type=annotated`);
         previewEl.classList.remove("hidden");
 
-        await loadGallery();
+        await Promise.all([loadGallery(), refreshQuota()]);
       } catch (error) {
         statusEl.textContent = "Upload failed due to network error";
       }
     });
 
+    /* ── Search ──────────────────────────────────────────────────── */
     document.getElementById("searchBtn").addEventListener("click", async () => {
       const query = document.getElementById("searchQuery").value.trim();
-      const btn = document.getElementById("searchBtn");
+      const btn   = document.getElementById("searchBtn");
 
       if (!query) {
         searchResults.innerHTML = "<p>Type a query first.</p>";
         return;
       }
 
-      // Show loading state
       btn.disabled = true;
       btn.textContent = "Searching…";
       searchResults.innerHTML = "<p>Searching…</p>";
@@ -222,10 +431,9 @@
         });
 
         let data;
-        try {
-          data = await res.json();
-        } catch {
-          searchResults.innerHTML = "<p>Server returned an unexpected response. Check backend logs.</p>";
+        try { data = await res.json(); }
+        catch {
+          searchResults.innerHTML = "<p>Server returned an unexpected response.</p>";
           return;
         }
 
@@ -240,24 +448,21 @@
         }
 
         searchResults.innerHTML = data.map(item => cardTemplate(item, item.score)).join("");
-
       } catch (err) {
-        searchResults.innerHTML = `<p>Network error: ${err.message}. Is the backend running?</p>`;
-        console.error("Search error:", err);
+        searchResults.innerHTML = `<p>Network error: ${err.message}</p>`;
       } finally {
         btn.disabled = false;
         btn.textContent = "Search";
       }
     });
 
+    /* ── Chat ────────────────────────────────────────────────────── */
     document.getElementById("chatSendBtn").addEventListener("click", async () => {
       const imageId = chatImageSelect.value;
-      const input = document.getElementById("chatInput");
+      const input   = document.getElementById("chatInput");
       const message = input.value.trim();
 
-      if (!imageId || !message) {
-        return;
-      }
+      if (!imageId || !message) return;
 
       if (!galleryState.historyByImageId[imageId]) {
         galleryState.historyByImageId[imageId] = [];
@@ -267,40 +472,59 @@
       renderChat(imageId);
       input.value = "";
 
-      const history = galleryState.historyByImageId[imageId];
-      const safeHistory = history.slice(-10).filter(msg => msg.role === "user" || msg.role === "assistant");
+      const history    = galleryState.historyByImageId[imageId];
+      const safeHistory = history.slice(-10).filter(
+        msg => msg.role === "user" || msg.role === "assistant"
+      );
 
-      const res = await fetch(`${API_BASE}/api/chat`, {
+      const res  = await fetch(`${API_BASE}/api/chat`, {
         method: "POST",
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ image_id: Number(imageId), message, history: safeHistory })
       });
 
       const data = await res.json();
+
+      if (res.status === 429) {
+        galleryState.historyByImageId[imageId].push({
+          role: "assistant",
+          content: `🚫 ${data.detail}`
+        });
+        renderChat(imageId);
+        await refreshQuota();
+        return;
+      }
+
       if (!res.ok) {
-        galleryState.historyByImageId[imageId].push({ role: "assistant", content: data.detail || "Chat failed" });
+        galleryState.historyByImageId[imageId].push({
+          role: "assistant",
+          content: data.detail || "Chat failed"
+        });
         renderChat(imageId);
         return;
       }
 
       galleryState.historyByImageId[imageId].push({ role: "assistant", content: data.reply });
       renderChat(imageId);
+      await refreshQuota(); // update token counter after each chat
     });
 
     chatImageSelect.addEventListener("change", () => {
-      if (chatImageSelect.value) {
-        renderChat(chatImageSelect.value);
-      }
+      if (chatImageSelect.value) renderChat(chatImageSelect.value);
     });
 
-    document.getElementById("refreshBtn").addEventListener("click", loadGallery);
+    document.getElementById("refreshBtn").addEventListener("click", async () => {
+      await Promise.all([loadGallery(), refreshQuota()]);
+    });
 
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("token");
       window.location.href = "login.html";
     });
 
+    // Initial load
     loadGallery();
+    refreshQuota();
   </script>
 </body>
 </html>
