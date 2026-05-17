@@ -1,26 +1,39 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign Up - Smart Gallery</title>
+  <title>Sign Up - PixelMind</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body class="auth-body">
   <div class="auth-card">
-    <h1>Smart Photo Gallery</h1>
-    <h2>Sign Up</h2>
+    <div class="brand brand-center">
+      <img src="assets/logo.svg" alt="" class="brand-logo" width="72" height="72" />
+      <div class="brand-text">
+        <span class="brand-name">PixelMind</span>
+        <span class="brand-tagline">AI-Powered Photo Intelligence</span>
+      </div>
+    </div>
+
+    <h2>Create your account</h2>
     <form id="signupForm">
-      <label>Email</label>
-      <input type="email" id="email" required />
-      <label>Username</label>
-      <input type="text" id="username" required />
-      <label>Password</label>
-      <input type="password" id="password" required minlength="6" />
-      <button type="submit">Create Account</button>
-      <p id="error" class="error"></p>
+      <label for="email">Email address</label>
+      <input type="email" id="email" placeholder="you@example.com" required />
+
+      <label for="username">Username</label>
+      <input type="text" id="username" placeholder="Choose a username" required />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="At least 6 characters" required minlength="6" />
+
+      <button type="submit" class="btn-primary" id="submitBtn">Create account</button>
+      <p id="error" class="error" role="alert"></p>
     </form>
-    <p>Already have an account? <a href="login.html">Login</a></p>
+
+    <p class="auth-footer">Already have an account? <a href="login.html">Sign in</a></p>
   </div>
 
   <script>
@@ -29,11 +42,15 @@
     document.getElementById("signupForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const errorEl = document.getElementById("error");
+      const submitBtn = document.getElementById("submitBtn");
       errorEl.textContent = "";
 
       const email = document.getElementById("email").value.trim();
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Creating account...";
 
       try {
         const res = await fetch(`${API_BASE}/auth/signup`, {
@@ -52,8 +69,12 @@
         window.location.href = "gallery.html";
       } catch (error) {
         errorEl.textContent = "Unable to connect to server";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Create account";
       }
     });
   </script>
 </body>
+
 </html>

@@ -1,203 +1,238 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <title>Smart Gallery</title>
+  <title>PixelMind — AI Photo Dashboard</title>
   <link rel="stylesheet" href="style.css" />
-  <style>
-    /* ── Usage Dashboard ─────────────────────────────────────────── */
-    .usage-dashboard {
-      display: flex;
-      gap: 1.5rem;
-      flex-wrap: wrap;
-      margin-bottom: 0.5rem;
-    }
-
-    .usage-card {
-      flex: 1;
-      min-width: 160px;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px;
-      padding: 1.25rem 1.5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.75rem;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .usage-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    }
-
-    .usage-card h3 {
-      margin: 0;
-      font-size: 0.8rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.5);
-    }
-
-    /* SVG donut */
-    .donut-wrap {
-      position: relative;
-      width: 100px;
-      height: 100px;
-    }
-    .donut-wrap svg { transform: rotate(-90deg); }
-
-    .donut-track {
-      fill: none;
-      stroke: rgba(255,255,255,0.07);
-      stroke-width: 10;
-    }
-    .donut-fill {
-      fill: none;
-      stroke-width: 10;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.9s cubic-bezier(0.4, 0, 0.2, 1),
-                  stroke 0.4s ease;
-    }
-    .donut-fill.upload-color  { stroke: #38bdf8; }
-    .donut-fill.token-color   { stroke: #a78bfa; }
-    .donut-fill.quota-hit     { stroke: #f87171; }
-
-    .donut-label {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-    }
-    .donut-label .value {
-      font-size: 1.35rem;
-      font-weight: 700;
-      color: #fff;
-      line-height: 1;
-    }
-    .donut-label .limit {
-      font-size: 0.65rem;
-      color: rgba(255,255,255,0.4);
-    }
-
-    .quota-badge {
-      display: inline-block;
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 0.2rem 0.6rem;
-      border-radius: 20px;
-      background: rgba(248, 113, 113, 0.15);
-      color: #f87171;
-      border: 1px solid rgba(248,113,113,0.3);
-      letter-spacing: 0.05em;
-    }
-    .quota-badge.ok {
-      background: rgba(16, 185, 129, 0.1);
-      color: #34d399;
-      border-color: rgba(52,211,153,0.3);
-    }
-  </style>
 </head>
+
 <body>
   <header class="topbar">
-    <h1>Smart Photo Gallery</h1>
+    <div class="brand">
+      <img src="assets/logo.svg" alt="" class="brand-logo" width="48" height="48" />
+      <div class="brand-text">
+        <span class="brand-name">PixelMind</span>
+        <span class="brand-tagline">AI-Powered Photo Intelligence</span>
+      </div>
+    </div>
     <div class="topbar-actions">
-      <button id="refreshBtn" class="secondary">Refresh Gallery</button>
-      <button id="logoutBtn" class="danger">Logout</button>
+      <button id="refreshBtn" class="btn-secondary">Refresh</button>
+      <button id="logoutBtn" class="btn-danger">Logout</button>
     </div>
   </header>
 
+  <nav class="tab-nav" role="tablist">
+    <button class="tab-btn active" data-tab="overview" role="tab">Dashboard</button>
+    <button class="tab-btn" data-tab="upload" role="tab">Upload</button>
+    <button class="tab-btn" data-tab="gallery" role="tab">Gallery</button>
+    <button class="tab-btn" data-tab="search" role="tab">Search</button>
+    <button class="tab-btn" data-tab="chat" role="tab">Chat</button>
+  </nav>
+
   <main class="dashboard">
 
-    <!-- ── Usage Dashboard ────────────────────────────────────────── -->
-    <section class="panel" id="usagePanel">
-      <h2>📊 Today's Usage</h2>
-      <div class="usage-dashboard">
+    <!-- Dashboard / Overview -->
+    <section class="tab-panel active" id="panel-overview" data-panel="overview">
 
-        <!-- Uploads card -->
-        <div class="usage-card">
-          <h3>📷 Images Uploaded</h3>
-          <div class="donut-wrap" id="uploadDonutWrap">
-            <svg width="100" height="100" viewBox="0 0 100 100">
-              <circle class="donut-track" cx="50" cy="50" r="40"/>
-              <circle id="uploadArc" class="donut-fill upload-color"
-                      cx="50" cy="50" r="40"
-                      stroke-dasharray="251.2"
-                      stroke-dashoffset="251.2"/>
-            </svg>
-            <div class="donut-label">
-              <span class="value" id="uploadValue">–</span>
-              <span class="limit" id="uploadLimit">/ 10</span>
+      <div class="db-section-label"><span class="db-section-dot green"></span>Today's Usage</div>
+      <section class="panel db-quota-panel hover-box" id="usagePanel">
+        <p class="db-quota-desc">Live quota for uploads and AI chat tokens. Updates after each upload or chat.</p>
+        <div class="usage-dashboard">
+          <div class="usage-card hover-box accent-green">
+            <h3>Images Uploaded</h3>
+            <div class="donut-wrap" id="uploadDonutWrap">
+              <svg width="110" height="110" viewBox="0 0 100 100">
+                <circle class="donut-track" cx="50" cy="50" r="40" />
+                <circle id="uploadArc" class="donut-fill upload-color" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2" />
+              </svg>
+              <div class="donut-label">
+                <span class="value" id="uploadValue">-</span>
+                <span class="limit" id="uploadLimit">/ 10</span>
+              </div>
+            </div>
+            <span class="quota-badge ok" id="uploadBadge">OK</span>
+          </div>
+          <div class="usage-card hover-box accent-blue">
+            <h3>AI Tokens Used</h3>
+            <div class="donut-wrap" id="tokenDonutWrap">
+              <svg width="110" height="110" viewBox="0 0 100 100">
+                <circle class="donut-track" cx="50" cy="50" r="40" />
+                <circle id="tokenArc" class="donut-fill token-color" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2" />
+              </svg>
+              <div class="donut-label">
+                <span class="value" id="tokenValue">-</span>
+                <span class="limit" id="tokenLimit">/ 2000</span>
+              </div>
+            </div>
+            <span class="quota-badge ok" id="tokenBadge">OK</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="db-hero hover-box">
+        <div class="db-hero-glow"></div>
+        <div class="db-hero-content">
+          <div class="db-hero-badge">Your photo library, smarter</div>
+          <h1 class="db-hero-title">Welcome to <span class="gradient-text">PixelMind</span></h1>
+          <p class="db-hero-sub">Upload your photos, find them with everyday words, and ask questions about any image. Everything stays in your private library.</p>
+          <div class="db-hero-stats">
+            <div class="db-stat hover-box accent-green">
+              <span class="db-stat-num" id="heroImageCount">-</span>
+              <span class="db-stat-label">Photos in your library</span>
+            </div>
+            <div class="db-stat-divider"></div>
+            <div class="db-stat hover-box accent-blue">
+              <span class="db-stat-num" id="heroTokenCount">-</span>
+              <span class="db-stat-label">AI messages today</span>
             </div>
           </div>
-          <span class="quota-badge ok" id="uploadBadge">OK</span>
-        </div>
-
-        <!-- Tokens card -->
-        <div class="usage-card">
-          <h3>🤖 AI Tokens Used</h3>
-          <div class="donut-wrap" id="tokenDonutWrap">
-            <svg width="100" height="100" viewBox="0 0 100 100">
-              <circle class="donut-track" cx="50" cy="50" r="40"/>
-              <circle id="tokenArc" class="donut-fill token-color"
-                      cx="50" cy="50" r="40"
-                      stroke-dasharray="251.2"
-                      stroke-dashoffset="251.2"/>
-            </svg>
-            <div class="donut-label">
-              <span class="value" id="tokenValue">–</span>
-              <span class="limit" id="tokenLimit">/ 2000</span>
-            </div>
+          <div class="db-quick-actions">
+            <button type="button" class="btn-primary db-quick-btn" data-goto="upload">Upload Photo</button>
+            <button type="button" class="btn-blue db-quick-btn" data-goto="gallery">View Gallery</button>
+            <button type="button" class="btn-orange db-quick-btn" data-goto="search">Semantic Search</button>
           </div>
-          <span class="quota-badge ok" id="tokenBadge">OK</span>
+        </div>
+      </div>
+
+      <div class="db-section-label"><span class="db-section-dot blue"></span>What you can do</div>
+      <div class="db-about-grid">
+        <article class="db-about-card hover-box accent-green" tabindex="0">
+          <div class="db-icon-box green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 12l-4-4m4 4l4-4M4 20h16"/></svg>
+          </div>
+          <h3>Upload your photos</h3>
+          <p>Add images to your personal library. PixelMind keeps them private and organized for you only.</p>
+        </article>
+        <article class="db-about-card hover-box accent-blue" tabindex="0">
+          <div class="db-icon-box blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/></svg>
+          </div>
+          <h3>Understand every image</h3>
+          <p>Each photo gets a clear description and highlighted objects so you can see what is in the picture at a glance.</p>
+        </article>
+        <article class="db-about-card hover-box accent-orange" tabindex="0">
+          <div class="db-icon-box orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+          </div>
+          <h3>Find photos with words</h3>
+          <p>Search using normal language, like beach sunset or photo with my dog, instead of remembering file names.</p>
+        </article>
+        <article class="db-about-card hover-box accent-blue" tabindex="0">
+          <div class="db-icon-box blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/></svg>
+          </div>
+          <h3>Ask about any photo</h3>
+          <p>Open a chat on an image and ask questions, such as what is in the background or who might be in the shot.</p>
+        </article>
+      </div>
+
+      <div class="db-section-label"><span class="db-section-dot orange"></span>How it works</div>
+      <div class="db-pipeline db-pipeline-simple">
+        <div class="db-pipe-step hover-box accent-green" tabindex="0">
+          <div class="db-pipe-icon green"><span>1</span></div>
+          <div class="db-pipe-body">
+            <h3>Upload</h3>
+            <p>Choose a photo from your device. PixelMind adds it to your library right away.</p>
+          </div>
+        </div>
+        <div class="db-pipe-step hover-box accent-blue" tabindex="0">
+          <div class="db-pipe-icon blue"><span>2</span></div>
+          <div class="db-pipe-body">
+            <h3>We analyze it</h3>
+            <p>PixelMind describes the scene, tags what it sees, and prepares the image for search and chat.</p>
+          </div>
+        </div>
+        <div class="db-pipe-step hover-box accent-orange" tabindex="0">
+          <div class="db-pipe-icon orange"><span>3</span></div>
+          <div class="db-pipe-body">
+            <h3>Search or chat</h3>
+            <p>Come back anytime to find that moment or ask the assistant questions about the photo.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- Upload -->
+    <section class="tab-panel" id="panel-upload" data-panel="upload">
+      <section class="panel">
+        <div class="panel-header">
+          <span class="panel-icon green">UP</span>
+          <h2>Upload Photo</h2>
+        </div>
+        <p class="panel-desc">JPEG or PNG up to 10 MB. AI will caption and detect objects automatically.</p>
+
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" accept="image/jpeg,image/png" />
+          <p class="drop-zone-title">Drag and drop your image here</p>
+          <p class="drop-zone-hint">or click to browse files</p>
         </div>
 
-      </div>
+        <div class="upload-actions">
+          <button id="uploadBtn" class="btn-primary">Process & Upload</button>
+        </div>
+        <p id="uploadStatus"></p>
+        <img id="uploadPreview" class="preview hidden" alt="Annotated preview" />
+        <div id="uploadMeta"></div>
+      </section>
     </section>
 
-    <!-- ── Upload ─────────────────────────────────────────────────── -->
-    <section class="panel">
-      <h2>Upload</h2>
-      <input type="file" id="fileInput" accept="image/jpeg,image/png" />
-      <button id="uploadBtn">Upload</button>
-      <p id="uploadStatus"></p>
-      <img id="uploadPreview" class="preview hidden" alt="Annotated preview" />
-      <div id="uploadMeta"></div>
+    <!-- Gallery -->
+    <section class="tab-panel" id="panel-gallery" data-panel="gallery">
+      <section class="panel">
+        <div class="panel-header">
+          <span class="panel-icon blue">GL</span>
+          <h2>Your Gallery</h2>
+        </div>
+        <p class="panel-desc">All your uploaded photos with AI captions and object detection.</p>
+        <div id="galleryGrid" class="card-grid"></div>
+        <div id="galleryEmpty" class="empty-state hidden">
+          <p>No photos yet. Upload your first image to get started.</p>
+        </div>
+      </section>
     </section>
 
-    <!-- ── Gallery ────────────────────────────────────────────────── -->
-    <section class="panel">
-      <h2>Gallery</h2>
-      <div id="galleryGrid" class="card-grid"></div>
+    <!-- Search -->
+    <section class="tab-panel" id="panel-search" data-panel="search">
+      <section class="panel">
+        <div class="panel-header">
+          <span class="panel-icon orange">SR</span>
+          <h2>Semantic Search</h2>
+        </div>
+        <p class="panel-desc">Describe what you are looking for in natural language.</p>
+        <div class="inline-controls">
+          <input type="text" id="searchQuery" placeholder="e.g. find a photo where I was drinking water" />
+          <button id="searchBtn" class="btn-orange">Search</button>
+        </div>
+        <div id="searchResults" class="card-grid"></div>
+      </section>
     </section>
 
-    <!-- ── Semantic Search ────────────────────────────────────────── -->
-    <section class="panel">
-      <h2>Semantic Search</h2>
-      <div class="inline-controls">
-        <input type="text" id="searchQuery" placeholder="Find a photo where I was drinking water" />
-        <button id="searchBtn">Search</button>
-      </div>
-      <div id="searchResults" class="card-grid"></div>
-    </section>
-
-    <!-- ── Chat ──────────────────────────────────────────────────── -->
-    <section class="panel">
-      <h2>Chat</h2>
-      <select id="chatImageSelect"></select>
-      <div id="chatThread" class="chat-thread"></div>
-      <div class="inline-controls">
-        <input type="text" id="chatInput" placeholder="Ask about selected image" />
-        <button id="chatSendBtn">Send</button>
-      </div>
+    <!-- Chat -->
+    <section class="tab-panel" id="panel-chat" data-panel="chat">
+      <section class="panel">
+        <div class="panel-header">
+          <span class="panel-icon green">CH</span>
+          <h2>Ask About a Photo</h2>
+        </div>
+        <p class="panel-desc">Select an image and chat with AI about its contents.</p>
+        <div class="chat-select-wrap">
+          <label for="chatImageSelect">Select image</label>
+          <select id="chatImageSelect"></select>
+        </div>
+        <div id="chatThread" class="chat-thread">
+          <div class="empty-state" id="chatEmpty">
+            <p>Select an image and send a message to start chatting.</p>
+          </div>
+        </div>
+        <div class="inline-controls">
+          <input type="text" id="chatInput" placeholder="Ask about the selected image..." />
+          <button id="chatSendBtn" class="btn-blue">Send</button>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -214,22 +249,72 @@
       historyByImageId: {}
     };
 
-    const headers = {
-      "Authorization": `Bearer ${token}`
-    };
+    const headers = { "Authorization": `Bearer ${token}` };
 
-    const galleryGrid    = document.getElementById("galleryGrid");
-    const searchResults  = document.getElementById("searchResults");
-    const chatThread     = document.getElementById("chatThread");
+    const galleryGrid = document.getElementById("galleryGrid");
+    const galleryEmpty = document.getElementById("galleryEmpty");
+    const searchResults = document.getElementById("searchResults");
+    const chatThread = document.getElementById("chatThread");
+    const chatEmpty = document.getElementById("chatEmpty");
     const chatImageSelect = document.getElementById("chatImageSelect");
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
 
-    /* ── Quota Dashboard ─────────────────────────────────────────── */
-    const CIRCUMFERENCE = 251.2; // 2 * π * 40
+    function switchTab(tab) {
+      document.querySelectorAll(".tab-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.tab === tab);
+      });
+      document.querySelectorAll(".tab-panel").forEach(p => {
+        p.classList.toggle("active", p.dataset.panel === tab);
+      });
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+    });
+
+    document.querySelectorAll(".db-quick-btn").forEach(btn => {
+      btn.addEventListener("click", () => switchTab(btn.dataset.goto));
+    });
+
+    /* Drag and drop */
+    dropZone.addEventListener("click", () => fileInput.click());
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("dragover");
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        updateDropZoneLabel(e.dataTransfer.files[0].name);
+      }
+    });
+
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files[0]) {
+        updateDropZoneLabel(fileInput.files[0].name);
+      }
+    });
+
+    function updateDropZoneLabel(name) {
+      dropZone.querySelector(".drop-zone-title").textContent = name;
+      dropZone.querySelector(".drop-zone-hint").textContent = "Ready to upload";
+    }
+
+    /* Quota */
+    const CIRCUMFERENCE = 251.2;
 
     function animateDonut(arcEl, used, limit) {
       const ratio = Math.min(used / limit, 1);
-      const offset = CIRCUMFERENCE - ratio * CIRCUMFERENCE;
-      arcEl.style.strokeDashoffset = offset;
+      arcEl.style.strokeDashoffset = CIRCUMFERENCE - ratio * CIRCUMFERENCE;
     }
 
     async function refreshQuota() {
@@ -238,7 +323,12 @@
         if (!res.ok) return;
         const q = await res.json();
 
-        // Uploads
+        // Hero stats
+        const heroImg = document.getElementById("heroImageCount");
+        const heroTok = document.getElementById("heroTokenCount");
+        if (heroImg) heroImg.textContent = q.uploads ?? "–";
+        if (heroTok) heroTok.textContent = q.tokens ?? "–";
+
         document.getElementById("uploadValue").textContent = q.uploads;
         document.getElementById("uploadLimit").textContent = `/ ${q.upload_limit}`;
         const uploadArc = document.getElementById("uploadArc");
@@ -256,7 +346,6 @@
           uploadBadge.classList.add("ok");
         }
 
-        // Tokens
         document.getElementById("tokenValue").textContent = q.tokens;
         document.getElementById("tokenLimit").textContent = `/ ${q.token_limit}`;
         const tokenArc = document.getElementById("tokenArc");
@@ -278,7 +367,6 @@
       }
     }
 
-    /* ── Helpers ─────────────────────────────────────────────────── */
     function absoluteUrl(path) {
       if (path.startsWith("http")) return path;
       return `${API_BASE}${path}`;
@@ -299,11 +387,7 @@
     function cardTemplate(item, score = null) {
       return `
         <article class="card">
-          <img
-            src="${imageUrl(item.thumbnail_url)}"
-            alt="Gallery image ${item.image_id}"
-            onerror="console.error('Image failed to load:', this.src)"
-          />
+          <img src="${imageUrl(item.thumbnail_url)}" alt="Gallery image ${item.image_id}" loading="lazy" />
           <div class="card-content">
             <p><strong>#${item.image_id}</strong> ${item.caption || "No caption"}</p>
             ${score !== null ? `<p class="score">Similarity: ${(score * 100).toFixed(2)}%</p>` : ""}
@@ -332,11 +416,22 @@
 
     function renderChat(imageId) {
       const history = galleryState.historyByImageId[imageId] || [];
+      if (!history.length) {
+        chatThread.innerHTML = '<div class="empty-state"><p>Select an image and send a message to start chatting.</p></div>';
+        return;
+      }
       chatThread.innerHTML = history.map(msg => {
         const side = msg.role === "user" ? "user" : "ai";
-        return `<div class="bubble ${side}">${msg.content}</div>`;
+        const label = msg.role === "user" ? "You" : "PixelMind AI";
+        return `<div class="bubble ${side}"><div class="bubble-label">${msg.role === 'user' ? 'You' : 'PixelMind AI'}</div>${escapeHtml(msg.content)}</div>`;
       }).join("");
       chatThread.scrollTop = chatThread.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
     }
 
     async function loadGallery() {
@@ -348,21 +443,29 @@
       }
       const data = await res.json();
       galleryState.items = data;
-      galleryGrid.innerHTML = data.map(item => cardTemplate(item)).join("");
+
+      if (!data.length) {
+        galleryGrid.innerHTML = "";
+        galleryEmpty.classList.remove("hidden");
+      } else {
+        galleryEmpty.classList.add("hidden");
+        galleryGrid.innerHTML = data.map(item => cardTemplate(item)).join("");
+      }
+
       populateChatDropdown();
       if (galleryState.items.length) {
         renderChat(String(galleryState.items[0].image_id));
       }
     }
 
-    /* ── Upload ──────────────────────────────────────────────────── */
     document.getElementById("uploadBtn").addEventListener("click", async () => {
-      const statusEl  = document.getElementById("uploadStatus");
-      const metaEl    = document.getElementById("uploadMeta");
+      const statusEl = document.getElementById("uploadStatus");
+      const metaEl = document.getElementById("uploadMeta");
       const previewEl = document.getElementById("uploadPreview");
-      const file      = document.getElementById("fileInput").files[0];
+      const file = fileInput.files[0];
+      const uploadBtn = document.getElementById("uploadBtn");
 
-      statusEl.textContent = "";
+      statusEl.innerHTML = "";
       metaEl.innerHTML = "";
       previewEl.classList.add("hidden");
 
@@ -375,8 +478,10 @@
       formData.append("file", file);
 
       try {
-        statusEl.textContent = "Uploading and processing...";
-        const res  = await fetch(`${API_BASE}/api/upload`, {
+        uploadBtn.disabled = true;
+        statusEl.innerHTML = '<span class="status-loading"><span class="spinner"></span>Uploading and processing with AI...</span>';
+
+        const res = await fetch(`${API_BASE}/api/upload`, {
           method: "POST",
           headers,
           body: formData
@@ -385,7 +490,7 @@
         const data = await res.json();
 
         if (res.status === 429) {
-          statusEl.textContent = `🚫 ${data.detail}`;
+          statusEl.textContent = data.detail;
           await refreshQuota();
           return;
         }
@@ -394,34 +499,36 @@
           return;
         }
 
-        statusEl.textContent = `✅ Uploaded image #${data.image_id}`;
+        statusEl.innerHTML = `<span class="success-msg">Uploaded image #${data.image_id} successfully.</span>`;
         metaEl.innerHTML = `
-          <p><strong>Caption:</strong> ${data.caption}</p>
+          <p style="margin-top:12px"><strong>Caption:</strong> ${escapeHtml(data.caption)}</p>
           <div class="badge-wrap">${renderBadges(data.objects)}</div>
         `;
 
         previewEl.src = imageUrl(`/api/images/${data.image_id}?type=annotated`);
         previewEl.classList.remove("hidden");
 
+        document.querySelector('[data-tab="gallery"]').click();
         await Promise.all([loadGallery(), refreshQuota()]);
       } catch (error) {
         statusEl.textContent = "Upload failed due to network error";
+      } finally {
+        uploadBtn.disabled = false;
       }
     });
 
-    /* ── Search ──────────────────────────────────────────────────── */
     document.getElementById("searchBtn").addEventListener("click", async () => {
       const query = document.getElementById("searchQuery").value.trim();
-      const btn   = document.getElementById("searchBtn");
+      const btn = document.getElementById("searchBtn");
 
       if (!query) {
-        searchResults.innerHTML = "<p>Type a query first.</p>";
+        searchResults.innerHTML = '<div class="empty-state"><p>Type a query first.</p></div>';
         return;
       }
 
       btn.disabled = true;
-      btn.textContent = "Searching…";
-      searchResults.innerHTML = "<p>Searching…</p>";
+      btn.textContent = "Searching...";
+      searchResults.innerHTML = '<div class="empty-state status-loading"><span class="spinner"></span>Searching your gallery...</div>';
 
       try {
         const res = await fetch(`${API_BASE}/api/search`, {
@@ -433,34 +540,38 @@
         let data;
         try { data = await res.json(); }
         catch {
-          searchResults.innerHTML = "<p>Server returned an unexpected response.</p>";
+          searchResults.innerHTML = '<div class="empty-state"><p>Server returned an unexpected response.</p></div>';
           return;
         }
 
         if (!res.ok) {
-          searchResults.innerHTML = `<p>Error ${res.status}: ${data.detail || "Search failed"}</p>`;
+          searchResults.innerHTML = `<div class="empty-state"><p>Error ${res.status}: ${data.detail || "Search failed"}</p></div>`;
           return;
         }
 
         if (!data.length) {
-          searchResults.innerHTML = "<p>No matches found for your query.</p>";
+          searchResults.innerHTML = '<div class="empty-state"><p>No matches found for your query.</p></div>';
           return;
         }
 
         searchResults.innerHTML = data.map(item => cardTemplate(item, item.score)).join("");
       } catch (err) {
-        searchResults.innerHTML = `<p>Network error: ${err.message}</p>`;
+        searchResults.innerHTML = `<div class="empty-state"><p>Network error: ${err.message}</p></div>`;
       } finally {
         btn.disabled = false;
         btn.textContent = "Search";
       }
     });
 
-    /* ── Chat ────────────────────────────────────────────────────── */
+    document.getElementById("searchQuery").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("searchBtn").click();
+    });
+
     document.getElementById("chatSendBtn").addEventListener("click", async () => {
       const imageId = chatImageSelect.value;
-      const input   = document.getElementById("chatInput");
+      const input = document.getElementById("chatInput");
       const message = input.value.trim();
+      const sendBtn = document.getElementById("chatSendBtn");
 
       if (!imageId || !message) return;
 
@@ -471,42 +582,51 @@
       galleryState.historyByImageId[imageId].push({ role: "user", content: message });
       renderChat(imageId);
       input.value = "";
+      sendBtn.disabled = true;
 
-      const history    = galleryState.historyByImageId[imageId];
+      const history = galleryState.historyByImageId[imageId];
       const safeHistory = history.slice(-10).filter(
         msg => msg.role === "user" || msg.role === "assistant"
       );
 
-      const res  = await fetch(`${API_BASE}/api/chat`, {
-        method: "POST",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({ image_id: Number(imageId), message, history: safeHistory })
-      });
-
-      const data = await res.json();
-
-      if (res.status === 429) {
-        galleryState.historyByImageId[imageId].push({
-          role: "assistant",
-          content: `🚫 ${data.detail}`
+      try {
+        const res = await fetch(`${API_BASE}/api/chat`, {
+          method: "POST",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ image_id: Number(imageId), message, history: safeHistory })
         });
+
+        const data = await res.json();
+
+        if (res.status === 429) {
+          galleryState.historyByImageId[imageId].push({
+            role: "assistant",
+            content: data.detail
+          });
+          renderChat(imageId);
+          await refreshQuota();
+          return;
+        }
+
+        if (!res.ok) {
+          galleryState.historyByImageId[imageId].push({
+            role: "assistant",
+            content: data.detail || "Chat failed"
+          });
+          renderChat(imageId);
+          return;
+        }
+
+        galleryState.historyByImageId[imageId].push({ role: "assistant", content: data.reply });
         renderChat(imageId);
         await refreshQuota();
-        return;
+      } finally {
+        sendBtn.disabled = false;
       }
+    });
 
-      if (!res.ok) {
-        galleryState.historyByImageId[imageId].push({
-          role: "assistant",
-          content: data.detail || "Chat failed"
-        });
-        renderChat(imageId);
-        return;
-      }
-
-      galleryState.historyByImageId[imageId].push({ role: "assistant", content: data.reply });
-      renderChat(imageId);
-      await refreshQuota(); // update token counter after each chat
+    document.getElementById("chatInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("chatSendBtn").click();
     });
 
     chatImageSelect.addEventListener("change", () => {
@@ -522,9 +642,9 @@
       window.location.href = "login.html";
     });
 
-    // Initial load
     loadGallery();
     refreshQuota();
   </script>
 </body>
+
 </html>
