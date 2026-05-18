@@ -60,3 +60,11 @@ def search_vectors(query_vector: list[float], user_id: int, limit: int = 3) -> l
         }
         for hit in response.points
     ]
+
+
+def delete_vector(image_id: int) -> None:
+    qdrant_client.delete(
+        collection_name=COLLECTION_NAME,
+        points_selector=models.PointIdsList(points=[image_id]),
+    )
+

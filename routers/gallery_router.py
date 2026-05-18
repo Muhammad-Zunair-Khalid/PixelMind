@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from auth import get_current_user_id, get_current_user_id_flexible
 from database import get_db_connection
 from models import GalleryItem, ObjectDetection
+from services.qdrant_service import delete_vector
 
 router = APIRouter()
 
@@ -87,3 +88,40 @@ def get_image(
 
     return FileResponse(path=Path(chosen), media_type="image/jpeg")
 
+
+@router.delete("/images/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_image(image_id: int, current_user_id: int = Depends(get_current_user_id)):
+    with get_db_connection() as conn:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT user_id, file_path, annotated_path FROM images WHERE id = %s", (image_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            cursor.close()
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+            
+        if int(row["user_id"]) != current_user_id:
+            cursor.close()
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+        file_path = row["file_path"]
+        annotated_path = row["annotated_path"]
+        
+        try:
+            if file_path:
+                Path(file_path).unlink(missing_ok=True)
+            if annotated_path:
+                Path(annotated_path).unlink(missing_ok=True)
+        except Exception:
+            pass
+            
+        cursor.execute("DELETE FROM images WHERE id = %s", (image_id,))
+        conn.commit()
+        cursor.close()
+        
+    try:
+        delete_vector(image_id)
+    except Exception:
+        pass
+        
+    return None

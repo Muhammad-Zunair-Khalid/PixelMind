@@ -1,4 +1,4 @@
-﻿@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 
 :root {
   --white: #ffffff;
@@ -254,6 +254,17 @@ button:disabled {
   transform: translateY(-1px);
 }
 
+.btn-red {
+  background: linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%);
+  color: var(--white);
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
+}
+
+.btn-red:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+  transform: translateY(-1px);
+}
+
 .btn-secondary {
   background: var(--white);
   color: var(--text);
@@ -362,6 +373,12 @@ button:disabled {
   box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
 }
 
+.tab-btn.active[data-tab="chat"] {
+  background: var(--danger);
+  border-color: var(--danger);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
 /* Dashboard */
 .dashboard {
   padding: 20px 28px 40px;
@@ -422,6 +439,10 @@ button:disabled {
 
 .panel-icon.orange {
   background: var(--orange);
+}
+
+.panel-icon.danger {
+  background: var(--danger);
 }
 
 .panel h2 {
@@ -641,6 +662,7 @@ button:disabled {
   border-radius: var(--radius);
   overflow: hidden;
   transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  position: relative;
 }
 
 .card:hover {
@@ -705,6 +727,81 @@ button:disabled {
   font-size: 0.85rem;
 }
 
+.card-menu-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all var(--transition);
+  z-index: 10;
+  padding: 0;
+}
+
+.card-menu-btn:hover {
+  background: var(--white);
+  transform: scale(1.05);
+}
+
+.card-dropdown {
+  position: absolute;
+  top: 48px;
+  right: 10px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-hover);
+  min-width: 150px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all var(--transition);
+}
+
+.card-dropdown.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.card-dropdown button {
+  background: none;
+  border: none;
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--text);
+  border-radius: 0;
+  width: 100%;
+  box-shadow: none;
+}
+
+.card-dropdown button:hover {
+  background: var(--bg-soft);
+  color: var(--blue);
+  transform: none;
+}
+
+.card-dropdown button.btn-delete {
+  color: var(--danger);
+}
+
+.card-dropdown button.btn-delete:hover {
+  background: var(--danger-light);
+}
+
 .empty-state {
   text-align: center;
   padding: 48px 24px;
@@ -720,14 +817,64 @@ button:disabled {
 }
 
 /* Chat */
+.chat-layout {
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.chat-preview-wrap {
+  flex: 0 0 35%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-preview-title {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+  text-align: center;
+}
+
+.chat-preview-wrap img {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: block;
+  object-fit: contain;
+  background: var(--bg-soft);
+  max-height: 400px;
+}
+
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .chat-layout {
+    flex-direction: column;
+  }
+  .chat-preview-wrap {
+    flex: none;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+}
+
 .chat-select-wrap {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .chat-thread {
-  margin: 12px 0;
+  flex: 1;
   min-height: 220px;
-  max-height: 360px;
+  max-height: 400px;
   overflow-y: auto;
   background: var(--bg-soft);
   border: 1px solid var(--border);
@@ -758,7 +905,7 @@ button:disabled {
 
 .bubble.user {
   align-self: flex-end;
-  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+  background: linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%);
   color: var(--white);
   border-bottom-right-radius: 4px;
 }

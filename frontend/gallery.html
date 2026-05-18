@@ -215,7 +215,7 @@
     <section class="tab-panel" id="panel-chat" data-panel="chat">
       <section class="panel">
         <div class="panel-header">
-          <span class="panel-icon green">CH</span>
+          <span class="panel-icon danger">CH</span>
           <h2>Ask About a Photo</h2>
         </div>
         <p class="panel-desc">Select an image and chat with AI about its contents.</p>
@@ -223,14 +223,22 @@
           <label for="chatImageSelect">Select image</label>
           <select id="chatImageSelect"></select>
         </div>
-        <div id="chatThread" class="chat-thread">
-          <div class="empty-state" id="chatEmpty">
-            <p>Select an image and send a message to start chatting.</p>
+        <div class="chat-layout">
+          <div class="chat-preview-wrap hidden" id="chatPreviewWrap">
+            <img id="chatPreviewImg" alt="Selected image for chat" />
+            <p id="chatPreviewTitle" class="chat-preview-title"></p>
           </div>
-        </div>
-        <div class="inline-controls">
-          <input type="text" id="chatInput" placeholder="Ask about the selected image..." />
-          <button id="chatSendBtn" class="btn-blue">Send</button>
+          <div class="chat-main">
+            <div id="chatThread" class="chat-thread">
+              <div class="empty-state" id="chatEmpty">
+                <p>Select an image and send a message to start chatting.</p>
+              </div>
+            </div>
+            <div class="inline-controls">
+              <input type="text" id="chatInput" placeholder="Ask about the selected image..." />
+              <button id="chatSendBtn" class="btn-red">Send</button>
+            </div>
+          </div>
         </div>
       </section>
     </section>
@@ -386,10 +394,17 @@
 
     function cardTemplate(item, score = null) {
       return `
-        <article class="card">
+        <article class="card" data-id="${item.image_id}">
+          <button class="card-menu-btn" title="Options">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+          </button>
+          <div class="card-dropdown">
+            <button class="btn-chat">Chat about image</button>
+            <button class="btn-delete">Delete Image</button>
+          </div>
           <img src="${imageUrl(item.thumbnail_url)}" alt="Gallery image ${item.image_id}" loading="lazy" />
           <div class="card-content">
-            <p><strong>#${item.image_id}</strong> ${item.caption || "No caption"}</p>
+            <p><strong>Title:</strong> ${item.caption || "No caption"}</p>
             ${score !== null ? `<p class="score">Similarity: ${(score * 100).toFixed(2)}%</p>` : ""}
             <div class="badge-wrap">${renderBadges(item.objects_detected || [])}</div>
           </div>
@@ -409,12 +424,29 @@
       galleryState.items.forEach(item => {
         const option = document.createElement("option");
         option.value = item.image_id;
-        option.textContent = `Image #${item.image_id} - ${(item.caption || "No caption").slice(0, 40)}`;
+        option.textContent = `Title: ${(item.caption || "No caption").slice(0, 40)}`;
         chatImageSelect.appendChild(option);
       });
     }
 
     function renderChat(imageId) {
+      const previewWrap = document.getElementById("chatPreviewWrap");
+      const previewImg = document.getElementById("chatPreviewImg");
+      const previewTitle = document.getElementById("chatPreviewTitle");
+      
+      if (imageId) {
+        const item = galleryState.items.find(i => String(i.image_id) === String(imageId));
+        if (item) {
+          previewImg.src = imageUrl(item.thumbnail_url);
+          previewTitle.innerHTML = `<strong>Title:</strong> ${escapeHtml(item.caption || "No caption")}`;
+          previewWrap.classList.remove("hidden");
+        } else {
+          previewWrap.classList.add("hidden");
+        }
+      } else {
+        previewWrap.classList.add("hidden");
+      }
+
       const history = galleryState.historyByImageId[imageId] || [];
       if (!history.length) {
         chatThread.innerHTML = '<div class="empty-state"><p>Select an image and send a message to start chatting.</p></div>';
@@ -640,6 +672,58 @@
     document.getElementById("logoutBtn").addEventListener("click", () => {
       localStorage.removeItem("token");
       window.location.href = "login.html";
+    });
+
+    document.addEventListener("click", async (e) => {
+      const menuBtn = e.target.closest(".card-menu-btn");
+      if (menuBtn) {
+        const dropdown = menuBtn.nextElementSibling;
+        const isShowing = dropdown.classList.contains("show");
+        document.querySelectorAll(".card-dropdown.show").forEach(d => d.classList.remove("show"));
+        if (!isShowing) dropdown.classList.add("show");
+        return;
+      }
+      
+      const chatBtn = e.target.closest(".btn-chat");
+      if (chatBtn) {
+        const card = chatBtn.closest(".card");
+        const imageId = card.dataset.id;
+        document.querySelector('[data-tab="chat"]').click();
+        chatImageSelect.value = imageId;
+        renderChat(imageId);
+        chatBtn.closest(".card-dropdown").classList.remove("show");
+        return;
+      }
+
+      const deleteBtn = e.target.closest(".btn-delete");
+      if (deleteBtn) {
+        const card = deleteBtn.closest(".card");
+        const imageId = card.dataset.id;
+        if (confirm("Are you sure you want to delete this image? This action cannot be undone.")) {
+          try {
+            const res = await fetch(`${API_BASE}/api/images/${imageId}`, {
+              method: "DELETE",
+              headers
+            });
+            if (res.ok) {
+              galleryState.items = galleryState.items.filter(i => String(i.image_id) !== String(imageId));
+              card.remove();
+              populateChatDropdown();
+              if (galleryState.items.length === 0) galleryEmpty.classList.remove("hidden");
+            } else {
+              alert("Failed to delete image.");
+            }
+          } catch (err) {
+            alert("Network error while deleting image.");
+          }
+        }
+        deleteBtn.closest(".card-dropdown").classList.remove("show");
+        return;
+      }
+
+      if (!e.target.closest(".card-dropdown")) {
+        document.querySelectorAll(".card-dropdown.show").forEach(d => d.classList.remove("show"));
+      }
     });
 
     loadGallery();
