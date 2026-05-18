@@ -51,7 +51,7 @@ def check_and_increment_uploads(user_id: int, conn: mysql.connector.MySQLConnect
     if row and row["uploads"] >= UPLOAD_LIMIT:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Daily upload limit reached ({UPLOAD_LIMIT} images/day). Resets at midnight.",
+            detail=f"Daily upload limit reached ({UPLOAD_LIMIT} images/day). Resets after midnight.",
         )
 
     cursor = conn.cursor()
