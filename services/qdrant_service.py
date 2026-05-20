@@ -36,7 +36,7 @@ def store_vector(image_id: int, user_id: int, caption: str, vector: list[float])
     qdrant_client.upsert(collection_name=COLLECTION_NAME, points=[point])
 
 
-def search_vectors(query_vector: list[float], user_id: int, limit: int = 3) -> list[dict]:
+def search_vectors(query_vector: list[float], user_id: int, limit: int = 50, score_threshold: float = 0.5) -> list[dict]:
     response = qdrant_client.query_points(
         collection_name=COLLECTION_NAME,
         query=query_vector,
@@ -49,6 +49,7 @@ def search_vectors(query_vector: list[float], user_id: int, limit: int = 3) -> l
             ]
         ),
         limit=limit,
+        score_threshold=score_threshold,
         with_payload=True,
     )
 

@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends
 
 from auth import get_current_user_id
 from database import get_db_connection
@@ -15,7 +15,7 @@ def semantic_search(
     current_user_id: int = Depends(get_current_user_id),
 ) -> list[SearchResult]:
     query_vector = encode(payload.query)
-    qdrant_hits = search_vectors(query_vector=query_vector, user_id=current_user_id, limit=3)
+    qdrant_hits = search_vectors(query_vector=query_vector, user_id=current_user_id)
 
     if not qdrant_hits:
         return []

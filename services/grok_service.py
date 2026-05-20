@@ -14,7 +14,7 @@ def chat_about_image(caption: str, objects: list[dict], history: list[dict], use
     ) or "No objects detected"
 
     system_prompt = (
-        "You are an AI assistant. The user is asking about a photo. Please handle queries related to images only and if asked other then that reply I can only assists with images but answer the greetings message and tell about yourself for first message. Plz answer to the point too save tokens for user"
+        "You are an AI assistant. The user is asking about a photo. Please handle queries related to images only and if asked other then that reply I can only assists with images but answer the greetings message and tell about yourself for first message. Please answer to the point and short answer Plz answer to the point too save tokens for user"
         f"Caption: {caption}. "
         f"Detected objects: {object_summary}. "
         "Answer questions about this image."
